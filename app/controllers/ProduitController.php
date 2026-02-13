@@ -60,4 +60,14 @@ class ProduitController {
         return $this->produitModel->searchProduits($motCle, $categorieId);
     }
 
+    public function getProduitByPourcentage($idProduit, $pourcentage = 10) {
+        return $this->produitModel->getProduitByPourcentage($pourcentage, $idProduit);
+    } 
+
+    public function getPriceDifference($id1, $id2) {
+        return $this->produitModel
+                    ->getPriceDifference($id1, $id2);
+    } 
+
+
 }

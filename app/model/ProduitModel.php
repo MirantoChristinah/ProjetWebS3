@@ -109,4 +109,83 @@ class ProduitModel {
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function getProduitByPourcentage($pourcentage, $idProduit) {
+
+        // 1️⃣ Récupérer le prix du produit de référence
+        $stmt = $this->db->prepare("SELECT prix FROM products WHERE id = :id");
+        $stmt->execute(['id' => $idProduit]);
+        $produit = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$produit) {
+            return [];
+        }
+
+        $prixProduit = $produit['prix'];
+
+        // 2️⃣ Calculer la fourchette
+        $variation = ($prixProduit * $pourcentage) / 100;
+
+        $prixPlus  = $prixProduit + $variation;
+        $prixMoins = $prixProduit - $variation;
+
+        // 3️⃣ Récupérer les produits dans la fourchette
+        $stmt = $this->db->prepare("
+            SELECT * FROM products
+            WHERE id != :idProduit 
+            AND prix BETWEEN :prixMoins AND :prixPlus
+        "); 
+
+        $stmt->execute([
+            'idProduit' => $idProduit,
+            'prixMoins' => $prixMoins,
+            'prixPlus'  => $prixPlus
+        ]); 
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+    public function getPriceDifference($idProduit1, $idProduit2) {
+
+        // 1️⃣ Récupérer les deux prix en une seule requête
+        $stmt = $this->db->prepare("
+            SELECT id, prix 
+            FROM products 
+            WHERE id IN (:id1, :id2)
+        ");
+
+        $stmt->execute([
+            'id1' => $idProduit1,
+            'id2' => $idProduit2
+        ]);
+
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($produits) < 2) {
+            return null; // un des produits n'existe pas
+        }
+
+        // 2️⃣ Identifier les prix
+        $prix1 = null;
+        $prix2 = null;
+
+        foreach ($produits as $p) {
+            if ($p['id'] == $idProduit1) {
+                $prix1 = $p['prix'];
+            }
+            if ($p['id'] == $idProduit2) {
+                $prix2 = $p['prix'];
+            }
+        }
+
+        if ($prix1 == 0) {
+            return null; // éviter division par zéro
+        }
+
+        // 3️⃣ Calcul
+        $prixDifference = $prix1 - $prix2;
+        $prixPourcentage = ($prixDifference / $prix1) * 100;
+
+        return round($prixPourcentage, 2);
+    }
 }
