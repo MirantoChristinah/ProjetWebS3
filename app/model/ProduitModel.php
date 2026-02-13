@@ -119,7 +119,7 @@ class ProduitModel {
         if (!$produit) {
             return [];
         }
-
+        
         $prixProduit = $produit['prix'];
 
         // 2️⃣ Calculer la fourchette
