@@ -44,7 +44,14 @@
                                 <p class="product-price mb-2"><?= number_format((float)($produit['prix'] ?? 0), 2) ?> $</p>
                                 <p class="product-description mb-0"><?= htmlspecialchars($produit['description'] ?? 'Aucune description') ?></p>
                             </div>
-
+                            <a href="/produit/<?= $produit['id'] ?>/similaires/10" 
+                                class="btn btn-outline-secondary btn-sm">
+                                ±10%
+                            </a>
+                            <a href="/produit/<?= $produit['id'] ?>/similaires/20" 
+                                class="btn btn-outline-secondary btn-sm">
+                                ±20%
+                            </a>
                             <div class="mt-3 d-flex justify-content-between align-items-center">
                                 <span class="badge text-bg-light my-products-badge">
                                     <i class="bi bi-people"></i>

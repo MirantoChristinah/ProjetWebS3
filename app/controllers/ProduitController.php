@@ -58,7 +58,7 @@ class ProduitController {
 
     public function searchProduits(?string $motCle = null, ?int $categorieId = null) {
         return $this->produitModel->searchProduits($motCle, $categorieId);
-    }
+    } 
 
     public function getProduitByPourcentage($idProduit, $pourcentage = 10) {
         return $this->produitModel->getProduitByPourcentage($pourcentage, $idProduit);
