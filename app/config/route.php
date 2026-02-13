@@ -352,3 +352,23 @@ Flight::route('GET /admin/statistiques', function() {
 
     Flight::json($controller->getStats());
 });
+
+//========= produit par pourcentage similarité ==============
+Flight::route('/produit/@id/similaires/@pourcentage', function($id, $pourcentage) {
+
+    $produitController = new ProduitController();
+
+    $produitsSimilaires = $produitController
+                            ->getProduitByPourcentage($id, $pourcentage);
+   // var_dump($produitsSimilaires);
+   foreach ($produitsSimilaires as &$produit) {
+        $produit['difference_pourcentage'] =
+            $produitController->getPriceDifference($id, $produit['id']);
+    }
+
+   // $produitsSimilaires['difference_pourcentage'] = $produitController->getPriceDifference($id, $produitsSimilaires['id']);
+    Flight::render('produits-similaires', [
+        'produits' => $produitsSimilaires
+    ]);
+}); 
+
