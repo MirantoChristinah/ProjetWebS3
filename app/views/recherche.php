@@ -75,10 +75,19 @@
                                     <?= htmlspecialchars($produit['categorie']['nom'] ?? 'Sans catégorie') ?>
                                 </p>
                                 <p class="product-price mb-2"><?= number_format((float)($produit['prix'] ?? 0), 2) ?> $</p>
-                                <p class="product-user mb-0">
-                                    <i class="bi bi-person"></i>
-                                    <?= htmlspecialchars($produit['user']['username'] ?? 'Utilisateur inconnu') ?>
-                                </p>
+                                
+                                <!-- Propriétaire -->
+                                <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                                    <img src="/images/<?= htmlspecialchars($produit['proprietaire_photo'] ?? $produit['user']['photo'] ?? 'default.png') ?>" 
+                                         alt="Photo propriétaire"
+                                         class="rounded-circle"
+                                         style="width: 30px; height: 30px; object-fit: cover;">
+                                    <a href="/profil/<?= $produit['user_id'] ?>" 
+                                       class="text-decoration-none fw-bold text-primary small">
+                                        <i class="bi bi-person"></i>
+                                        <?= htmlspecialchars($produit['proprietaire_nom'] ?? $produit['user']['username'] ?? 'Utilisateur') ?>
+                                    </a>
+                                </div>
                             </div>
                             <div class="mt-3">
                                 <a href="/produit/<?= $produit['id'] ?>" class="btn btn-details">

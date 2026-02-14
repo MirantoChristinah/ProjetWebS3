@@ -44,14 +44,16 @@
                                 <p class="product-price mb-2"><?= number_format((float)($produit['prix'] ?? 0), 2) ?> $</p>
                                 <p class="product-description mb-0"><?= htmlspecialchars($produit['description'] ?? 'Aucune description') ?></p>
                             </div>
-                            <a href="/produit/<?= $produit['id'] ?>/similaires/10" 
-                                class="btn btn-outline-secondary btn-sm">
-                                ±10%
-                            </a>
-                            <a href="/produit/<?= $produit['id'] ?>/similaires/20" 
-                                class="btn btn-outline-secondary btn-sm">
-                                ±20%
-                            </a>
+                            <div class="d-flex gap-2 mt-3">
+                                <a href="/produit/<?= $produit['id'] ?>/similaires/10" 
+                                    class="btn btn-warning btn-sm fw-bold">
+                                    <i class="bi bi-search"></i> ±10%
+                                </a>
+                                <a href="/produit/<?= $produit['id'] ?>/similaires/20" 
+                                    class="btn btn-info btn-sm fw-bold text-white">
+                                    <i class="bi bi-search"></i> ±20%
+                                </a>
+                            </div>
                             <div class="mt-3 d-flex justify-content-between align-items-center">
                                 <span class="badge text-bg-light my-products-badge">
                                     <i class="bi bi-people"></i>
@@ -61,6 +63,34 @@
                                     Voir la fiche
                                 </a>
                             </div>
+                            
+                            <!-- Demandes d'\u00e9change en attente -->
+                            <?php if (!empty($produit['echanges_attente'])): ?>
+                                <div class="mt-3 pt-3 border-top">
+                                    <h6 class="text-warning mb-2">
+                                        <i class="bi bi-hourglass-split"></i> 
+                                        <?= count($produit['echanges_attente']) ?> demande(s) en attente
+                                    </h6>
+                                    <?php foreach ($produit['echanges_attente'] as $echange): ?>
+                                        <div class="alert alert-warning alert-sm p-2 mb-2">
+                                            <small>
+                                                <strong><?= htmlspecialchars($echange['autre_user']) ?></strong> 
+                                                souhaite \u00e9changer
+                                            </small>
+                                            <div class="mt-1">
+                                                <button type="button" class="btn btn-success btn-sm" 
+                                                        onclick="event.preventDefault(); accepterEchange(<?= $echange['id'] ?>)">
+                                                    <i class="bi bi-check-circle"></i> Accepter
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="event.preventDefault(); refuserEchange(<?= $echange['id'] ?>)">
+                                                    <i class="bi bi-x-circle"></i> Refuser
+                                                </button>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php } ?>
@@ -69,5 +99,85 @@
     </div>
 
     <?php require 'footer.php'; ?>
+    
+    <script>
+    function accepterEchange(echangeId) {
+        if (!confirm('Voulez-vous accepter cette demande d\'échange ? Les deux produits seront échangés.')) {
+            return;
+        }
+        
+        // Désactiver les boutons pour éviter les doubles clics
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+        
+        fetch(`/api/echanges/${echangeId}/status`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ status_id: 3 })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Recharger la page pour voir les changements
+                window.location.href = '/mes-produits';
+            } else {
+                alert('Erreur lors de l\'acceptation de l\'échange');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'acceptation de l\'échange');
+            buttons.forEach(btn => btn.disabled = false);
+        });
+    }
+    
+    function refuserEchange(echangeId) {
+        if (!confirm('Voulez-vous refuser cette demande d\'échange ?')) {
+            return;
+        }
+        
+        // Désactiver les boutons pour éviter les doubles clics
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+        
+        fetch(`/api/echanges/${echangeId}/status`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ status_id: 2 })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Recharger la page pour voir les changements
+                window.location.href = '/mes-produits';
+            } else {
+                alert('Erreur lors du refus de l\'échange');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du refus de l\'échange');
+            buttons.forEach(btn => btn.disabled = false);
+        });
+    }
+    </script>
 </body>
 </html>

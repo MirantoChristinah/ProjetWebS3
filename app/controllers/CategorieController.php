@@ -1,21 +1,12 @@
 <?php 
-namespace app\controllers;
-use app\model\CategorieModel ; 
 
-use flight\Engine;
-use Flight ; 
+namespace app\controllers; 
+
+use app\model\CategorieModel;
+use Flight;
+use Throwable;
 
 class CategorieController {
-    private $categorieModel;
-
-    public function __construct() {
-        $db = Flight::db();
-        $this->categorieModel = new CategorieModel($db);
-    }
-
-    public function getCategorie($id) {
-        return $this->categorieModel->getCategorieById($id);
-    }
 
     public function getAllCategorie(){
         $db = Flight::db();
@@ -24,6 +15,12 @@ class CategorieController {
         $allCategories = $categorie->getAllCategorie();
 
         return $allCategories;
+    }
+
+    public function getCategorie($id){
+        $db = Flight::db();
+        $categorie = new CategorieModel($db);
+        return $categorie->getCategorieById($id);
     }
  
 
@@ -44,7 +41,4 @@ class CategorieController {
         $categorie = new CategorieModel($db);
         return $categorie->updateCategorie($id, $nom, $icon);
     }
-
-
-
 }

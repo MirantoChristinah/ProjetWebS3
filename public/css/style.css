@@ -66,6 +66,19 @@ header {
     color: var(--primary);
 }
 
+/* Lien "Nouveau" en rouge */
+.nav-links a.nouveau-link {
+    background: #dc3545;
+    color: white;
+    font-weight: bold;
+}
+
+.nav-links a.nouveau-link:hover {
+    background: #c82333;
+    color: white;
+    transform: scale(1.05);
+}
+
 .user-dropdown {
     position: relative;
 }
@@ -630,13 +643,34 @@ table {
 th, td {
     padding: 14px;
     text-align: center;
+    color: #333 !important; /* Force le texte à être visible */
 }
 
 th {
-    background: var(--primary);
-    color: white;
+    background: #9b203f !important; /* Rouge primary */
+    color: white !important;
     font-weight: 600;
     border-radius: 8px 8px 0 0;
+}
+
+/* Header rouge personnalisé */
+.table-red thead th {
+    background: #9b203f !important;
+    color: white !important;
+    border: none;
+    font-weight: 600;
+}
+
+.echange-table tbody tr {
+    background: white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s;
+}
+
+.echange-table tbody tr:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(155, 32, 63, 0.15);
 }
 
 tr {
@@ -648,34 +682,42 @@ tr {
 td {
     background: white;
     border-radius: 8px;
+    color: #333 !important;
+    font-weight: 500;
 }
 
 /* Status badges */
 .status {
     font-weight: bold;
-    padding: 6px 12px;
+    padding: 8px 16px;
     border-radius: 20px;
     display: inline-block;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
+.status-attente,
 .status-pending {
-    background: #f9e79f;
-    color: #7d6608;
+    background: #ffc107;
+    color: #000;
 }
 
+.status-accepte,
 .status-accepted {
-    background: #a9dfbf;
-    color: #145a32;
+    background: #28a745;
+    color: white;
 }
 
+.status-refuse,
 .status-refused {
-    background: #f5b7b1;
-    color: #922b21;
+    background: #dc3545;
+    color: white;
 }
 
 /* Buttons stylés */
 .btn {
-    padding: 6px 14px;
+    padding: 8px 16px;
     border: none;
     cursor: pointer;
     color: white;
@@ -686,17 +728,123 @@ td {
 }
 
 .accept {
-    background: #27ae60;
+    background: #28a745 !important;
+    color: white !important;
 }
 
 .accept:hover {
-    background: #1e8449;
+    background: #218838 !important;
 }
 
 .refuse {
-    background: #e74c3c;
+    background: #dc3545 !important;
+    color: white !important;
 }
 
 .refuse:hover {
-    background: #c0392b;
+    background: #c82333 !important;
+}
+
+/* Actions cell */
+.actions-cell {
+    min-width: 200px;
+}
+
+/* Force la visibilité du texte dans tous les tableaux */
+table tbody td {
+    color: #212529 !important;
+    font-weight: 500;
+}
+
+table tbody tr {
+    background-color: white !important;
+}
+
+table tbody tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Classes Bootstrap overrides pour visibilité */
+.text-dark {
+    color: #212529 !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+/* Filters buttons */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-btn {
+    font-weight: 600 !important;
+    transition: all 0.3s;
+}
+
+.filter-btn.active {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Catégorie table specific */
+.categorie-table tbody tr {
+    background: white;
+    transition: all 0.3s;
+}
+
+.categorie-table tbody tr:hover {
+    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(155, 32, 63, 0.15);
+}
+
+/* =========================
+   CATEGORIES PAGE STYLES
+========================= */
+
+.category-card {
+    transition: all 0.3s ease;
+    border: 2px solid #e0e0e0;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(155, 32, 63, 0.2) !important;
+    border-color: var(--primary);
+}
+
+.category-icon {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--primary);
+}
+
+.category-icon-fallback {
+    width: 80px;
+    height: 80px;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: bold;
+    border-radius: 50%;
+    margin: 0 auto;
+}
+
+.category-card .card-title {
+    color: var(--primary);
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.category-card:hover .card-title {
+    color: var(--primary-dark);
 }

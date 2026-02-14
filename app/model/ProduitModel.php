@@ -18,18 +18,28 @@ class ProduitModel {
     }
 
 
-    // Tous les produits sauf ceux de l'utilisateur connecté
+    // Tous les produits sauf ceux de l'utilisateur connecté et les produits échangés
     public function getOthersProduit($idConnecter) {
-        $sql = "SELECT * FROM products WHERE user_id != ?";
+        $sql = "SELECT p.*, u.username as proprietaire_nom, u.photo as proprietaire_photo 
+                FROM products p
+                LEFT JOIN echange e ON (p.id = e.produit1_id OR p.id = e.produit2_id) AND e.status_id = 3
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.user_id != ? AND e.id IS NULL
+                GROUP BY p.id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$idConnecter]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } 
 
-    // Produits appartenant à un utilisateur spécifique
+    // Produits appartenant à un utilisateur spécifique (excluant ceux échangés)
     public function getProduitsByUserId($userId) {
-        $sql = "SELECT * FROM products WHERE user_id = ?";
+        $sql = "SELECT p.*, u.username as proprietaire_nom, u.photo as proprietaire_photo 
+                FROM products p
+                LEFT JOIN echange e ON (p.id = e.produit1_id OR p.id = e.produit2_id) AND e.status_id = 3
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.user_id = ? AND e.id IS NULL
+                GROUP BY p.id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$userId]);
 
@@ -38,7 +48,10 @@ class ProduitModel {
 
     // Produit par ID
     public function getProduitById($id) {
-        $sql = "SELECT * FROM products WHERE id = ?";
+        $sql = "SELECT p.*, u.username as proprietaire_nom, u.photo as proprietaire_photo 
+                FROM products p
+                LEFT JOIN users u ON p.user_id = u.id
+                WHERE p.id = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$id]);
 
@@ -55,14 +68,13 @@ class ProduitModel {
     }
 
     // Ajouter un produit
-    public function addProduit($nom, $description, $prix, $categorieId, $userId) {
-        $sql = "INSERT INTO products (nom, description, prix, categorie_id, user_id)
-                VALUES (?, ?, ?, ?, ?)";
+    public function addProduit($nom, $description, $prix, $categorieId, $userId, $image = 'default.jpg') {
+        $sql = "INSERT INTO products (nom, description, prix, categorie_id, user_id, image)
+                VALUES (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->db->prepare($sql);
 
-        return $stmt->execute([$nom, $description, $prix, $categorieId, $userId
-        ]);
+        return $stmt->execute([$nom, $description, $prix, $categorieId, $userId, $image]);
     }
 
 
@@ -130,9 +142,11 @@ class ProduitModel {
 
         // 3️⃣ Récupérer les produits dans la fourchette
         $stmt = $this->db->prepare("
-            SELECT * FROM products
-            WHERE id != :idProduit 
-            AND prix BETWEEN :prixMoins AND :prixPlus
+            SELECT p.*, u.username as proprietaire_nom, u.photo as proprietaire_photo 
+            FROM products p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.id != :idProduit 
+            AND p.prix BETWEEN :prixMoins AND :prixPlus
         "); 
 
         $stmt->execute([
