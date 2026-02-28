@@ -49,7 +49,7 @@ function displayEchanges(echanges) {
     const tbody = document.getElementById('echangeTable');
     
     if (!echanges || echanges.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="empty-message">Aucun échange trouvé</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty-message text-dark fw-bold">Aucun échange trouvé</td></tr>';
         return;
     }
     
@@ -60,19 +60,25 @@ function displayEchanges(echanges) {
         
         html += `
             <tr>
-                <td>${e.id}</td>
-                <td><strong>${e.produit1 || 'N/A'}</strong></td>
-                <td><strong>${e.produit2 || 'N/A'}</strong></td>
-                <td>${e.user1 || 'N/A'}</td>
-                <td>${e.user2 || 'N/A'}</td>
+                <td class="text-dark fw-bold">${e.id}</td>
+                <td class="text-dark"><strong>${e.produit1 || 'N/A'}</strong></td>
+                <td class="text-dark"><strong>${e.produit2 || 'N/A'}</strong></td>
+                <td class="text-dark">${e.user1 || 'N/A'}</td>
+                <td class="text-dark">${e.user2 || 'N/A'}</td>
                 <td><span class="status ${statusClass}">${e.etat || 'N/A'}</span></td>
-                <td>${e.date_envoie || '-'}</td>
-                <td>${e.date_acceptation || '-'}</td>
-                <td>
+                <td class="text-dark">${e.date_envoie || '-'}</td>
+                <td class="text-dark">${e.date_acceptation || '-'}</td>
+                <td class="actions-cell">
                     ${canAction ? `
-                        <button class="accept" onclick="updateStatus(${e.id}, 3)">Accepter</button>
-                        <button class="refuse" onclick="updateStatus(${e.id}, 2)">Refuser</button>
-                    ` : '---'}
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-success btn-sm accept" onclick="updateStatus(${e.id}, 3)">
+                                <i class="bi bi-check"></i> Accepter
+                            </button>
+                            <button class="btn btn-danger btn-sm refuse" onclick="updateStatus(${e.id}, 2)">
+                                <i class="bi bi-x"></i> Refuser
+                            </button>
+                        </div>
+                    ` : '<span class="text-muted">---</span>'}
                 </td>
             </tr>
         `;

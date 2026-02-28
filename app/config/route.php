@@ -19,6 +19,16 @@ Flight::route('/', function () {
     Flight::render('login'); 
 });
 
+Flight::route('GET /logout', function () {
+    // Détruire la session
+    $_SESSION = [];
+    session_destroy();
+    
+    // Rediriger vers la page de login (racine de l'application)
+    header('Location: /');
+    exit();
+});
+
 Flight::route('GET /home', function () {
     Flight::render('home');
 }); 
@@ -104,6 +114,53 @@ Flight::route('POST /inscription', function() {
 if(isset($_SESSION['user'])){
 
 
+// Page catégories (HTML)
+Flight::route('/categories', function () {
+    $controller = new CategorieController();
+    $result = $controller->getAllCategorie();
+    Flight::render('categorie', ['categories' => $result]);
+});
+
+// API catégories (JSON)
+Flight::route('GET /api/categories', function () {
+    $controller = new CategorieController();
+    Flight::json($controller->getAllCategorie());
+});
+
+// Ajouter une catégorie
+Flight::route('POST /api/categories', function () {
+    $data = Flight::request()->data;
+    $controller = new CategorieController();
+
+    $result = $controller->addCategorie(
+        $data->nom ?? '',
+        $data->icon ?? ''
+    );
+
+    Flight::json(['success' => (bool)$result]);
+});
+
+// Mettre à jour une catégorie
+Flight::route('PUT /api/categories/@id', function ($id) {
+    $data = Flight::request()->data;
+    $controller = new CategorieController();
+
+    $result = $controller->updateCategorie(
+        (int)$id,
+        $data->nom ?? '',
+        $data->icon ?? ''
+    );
+
+    Flight::json(['success' => (bool)$result]);
+});
+
+// Supprimer une catégorie
+Flight::route('DELETE /api/categories/@id', function ($id) {
+    $controller = new CategorieController();
+    $result = $controller->deleteCategorie((int)$id);
+    Flight::json(['success' => (bool)$result]);
+});
+
 Flight::route('/produits', function () {
     $produitController = new ProduitController();
     $userController = new UserController();
@@ -151,10 +208,27 @@ Flight::route('/produit/@id', function ($id) {
     $product_selected['user'] = $userController->getUserById($product_selected['user_id']);
     $product_selected['categorie'] = $categorieController->getCategorie($product_selected['categorie_id']);
     $historique = $echangeController->getHistoriqueProduit($id);
+    
+    // Récupérer les produits de l'utilisateur connecté pour proposer un échange
+    $mesProduits = [];
+    $db = Flight::db();
+    $echangeModel = new \app\model\EchangeModel($db);
+    
+    if (isset($_SESSION['user']) && $_SESSION['user']['id'] != $product_selected['user_id']) {
+        $mesProduits = $produitController->listProduitsUtilisateur();
+        
+        // Pour chaque produit, vérifier s'il existe un échange
+        foreach ($mesProduits as &$monProduit) {
+            $monProduit['categorie'] = $categorieController->getCategorie($monProduit['categorie_id']);
+            $echange = $echangeModel->getEchangeEntreDeuxProduits($monProduit['id'], $id);
+            $monProduit['echange'] = $echange;
+        }
+    }
 
     Flight::render('produit_detail', [
         'produit_detail' => $product_selected,
-        'historique' => $historique
+        'historique' => $historique,
+        'mesProduits' => $mesProduits
     ]);
 });
 
@@ -227,17 +301,122 @@ Flight::route('GET /mes-produits', function () {
 
     $produitController = new ProduitController();
     $categorieController = new CategorieController();
+    $userController = new UserController();
+    $db = Flight::db();
+    $echangeModel = new \app\model\EchangeModel($db);
 
     $mesProduits = $produitController->listProduitsUtilisateur();
 
     foreach ($mesProduits as &$produit) {
         $produit['categorie'] = $categorieController->getCategorie($produit['categorie_id']);
+        
+        // Récupérer les demandes d'échange entrantes (où quelqu'un veut MON produit)
+        // produit1_id = le produit demandé (le mien)
+        // user1_id = celui qui envoie la demande (l'autre personne)
+        $sql = "SELECT e.*, s.etat, u.username as autre_user
+                FROM echange e
+                JOIN echange_status s ON e.status_id = s.id
+                JOIN users u ON e.user1_id = u.id
+                WHERE e.produit1_id = :produit_id
+                AND e.user2_id = :user_id
+                AND e.status_id = 1
+                ORDER BY e.date_envoie DESC";
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute([
+            ':produit_id' => $produit['id'],
+            ':user_id' => $_SESSION['user']['id']
+        ]);
+        $produit['echanges_attente'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     Flight::render('mes_produits', [
         'produits' => $mesProduits,
         'user' => $_SESSION['user']
     ]);
+});
+
+// Route pour afficher le formulaire d'ajout de produit
+Flight::route('GET /nouveau-produit', function () {
+    if (!isset($_SESSION['user'])) {
+        Flight::redirect('/');
+        return;
+    }
+
+    $categorieController = new CategorieController();
+    $categories = $categorieController->getAllCategorie();
+
+    Flight::render('ajouter_produit', [
+        'categories' => $categories
+    ]);
+});
+
+// Route pour traiter l'ajout de produit
+Flight::route('POST /api/produits', function () {
+    if (!isset($_SESSION['user'])) {
+        Flight::json(['success' => false, 'message' => 'Non connecté']);
+        return;
+    }
+
+    $data = Flight::request()->data;
+    $files = Flight::request()->files;
+    
+    // Validation basique
+    $errors = [];
+    if (empty($data->nom)) {
+        $errors[] = "Le nom du produit est requis";
+    }
+    if (empty($data->description)) {
+        $errors[] = "La description est requise";
+    }
+    if (empty($data->prix) || $data->prix <= 0) {
+        $errors[] = "Le prix doit être supérieur à 0";
+    }
+    if (empty($data->categorie_id)) {
+        $errors[] = "La catégorie est requise";
+    }
+
+    if (!empty($errors)) {
+        Flight::json(['success' => false, 'errors' => $errors]);
+        return;
+    }
+
+    // Gestion de l'upload d'image
+    $imageName = 'default.jpg';
+    if (isset($files['image']) && $files['image']['error'] === 0) {
+        $uploadDir = __DIR__ . '/../../public/images/';
+        
+        // Créer le dossier s'il n'existe pas
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        $extension = pathinfo($files['image']['name'], PATHINFO_EXTENSION);
+        $imageName = uniqid('produit_') . '.' . $extension;
+        $uploadPath = $uploadDir . $imageName;
+        
+        if (move_uploaded_file($files['image']['tmp_name'], $uploadPath)) {
+            // Image uploadée avec succès
+        } else {
+            $imageName = 'default.jpg';
+        }
+    }
+
+    $produitController = new ProduitController();
+    $result = $produitController->addProduit(
+        $data->nom,
+        $data->description,
+        $data->prix,
+        $data->categorie_id,
+        $_SESSION['user']['id'],
+        $imageName
+    );
+
+    if ($result) {
+        Flight::json(['success' => true, 'message' => 'Produit ajouté avec succès']);
+    } else {
+        Flight::json(['success' => false, 'message' => 'Erreur lors de l\'ajout du produit']);
+    }
 });
 
 Flight::route('GET /admin/statistiques', function () {
@@ -294,11 +473,13 @@ Flight::route('POST /api/echanges/@id/status', function ($id) {
 Flight::route('GET /echange_user/@user_id', function($user_id) {
     Flight::render('echange_user', ['user_id' => $user_id]);
 });
+
 //=== tous les echanges d'un user
 Flight::route('GET /api/echanges/user/@user_id', function($user_id) {
     $controller = new EchangeController();
     Flight::json($controller->getAllEchangesUsers($user_id));
 });
+
 //=== mes demandes envoyées
 Flight::route('GET /api/echanges/user/@user_id/envoyees', function($user_id) {
     $controller = new EchangeController();
@@ -323,8 +504,6 @@ Flight::route('GET /api/produits', function () {
     Flight::json($controller->getAllProduits());
 });
 
-
-
 // ===== ajout de echange
 Flight::route('POST /api/echanges', function () {
     $data = Flight::request()->data;
@@ -341,6 +520,13 @@ Flight::route('POST /api/echanges', function () {
     Flight::json($result);
 });
 
+// ===== annuler/supprimer un échange
+Flight::route('DELETE /api/echanges/@id', function ($id) {
+    $controller = new EchangeController();
+    $result = $controller->deleteEchange((int)$id);
+    Flight::json($result);
+});
+
 //================= statistiques admin =================
 Flight::route('GET /admin/statistiques', function() {
     session_start();
@@ -351,4 +537,71 @@ Flight::route('GET /admin/statistiques', function() {
     $controller = new EchangeController();
 
     Flight::json($controller->getStats());
+});
+
+//========= produit par pourcentage similarité ==============
+Flight::route('/produit/@id/similaires/@pourcentage', function($id, $pourcentage) {
+
+    $produitController = new ProduitController();
+    $echangeController = new EchangeController();
+    $db = Flight::db();
+    $echangeModel = new \app\model\EchangeModel($db);
+
+    $produitsSimilaires = $produitController
+                            ->getProduitByPourcentage($id, $pourcentage);
+   // var_dump($produitsSimilaires);
+   foreach ($produitsSimilaires as &$produit) {
+        $produit['difference_pourcentage'] =
+            $produitController->getPriceDifference($id, $produit['id']);
+        
+        // Vérifier l'état de l'échange entre ces deux produits
+        $echange = $echangeModel->getEchangeEntreDeuxProduits($id, $produit['id']);
+        $produit['echange'] = $echange;
+    }
+    
+    // Filtrer les produits qui ont un échange accepté (status_id = 3)
+    $produitsSimilaires = array_filter($produitsSimilaires, function($produit) {
+        return !$produit['echange'] || $produit['echange']['status_id'] != 3;
+    });
+
+    $_SESSION['produit_id'] = $id;
+   // $produitsSimilaires['difference_pourcentage'] = $produitController->getPriceDifference($id, $produitsSimilaires['id']);
+    Flight::render('produits-similaires', [
+        'produits' => $produitsSimilaires
+    ]);
+}); 
+
+// ============ Profil utilisateur ================
+Flight::route('GET /profil/@id', function ($id) {
+    if (!isset($_SESSION['user'])) {
+        Flight::redirect('/');
+        return;
+    }
+
+    $userController = new UserController();
+    $produitController = new ProduitController();
+    $categorieController = new CategorieController();
+    $db = Flight::db();
+    $produitModel = new \app\model\ProduitModel($db);
+
+    // Récupérer les informations de l'utilisateur
+    $user = $userController->getUserById($id);
+    
+    if (!$user) {
+        Flight::notFound();
+        return;
+    }
+
+    // Récupérer tous les produits de cet utilisateur
+    $produits = $produitModel->getProduitsByUserId($id);
+
+    // Ajouter les informations de catégorie
+    foreach ($produits as &$produit) {
+        $produit['categorie'] = $categorieController->getCategorie($produit['categorie_id']);
+    }
+
+    Flight::render('profile', [
+        'user' => $user,
+        'produits' => $produits
+    ]);
 });

@@ -240,7 +240,7 @@ Class EchangeModel {
     public function getAllEchangesUsers($user_id) {
         return $this->getEchangesByUser($user_id);
     }
-
+    
     // Nombre total d'échanges
     public function getNombreEchanges(): int {
         $stmt = $this->db->query("SELECT COUNT(*) as total FROM echanges");
@@ -270,6 +270,24 @@ Class EchangeModel {
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Vérifier l'état d'un échange entre deux produits
+    public function getEchangeEntreDeuxProduits($produit1_id, $produit2_id) {
+        $sql = "SELECT e.*, s.etat 
+                FROM echange e
+                JOIN echange_status s ON e.status_id = s.id
+                WHERE ((e.produit1_id = :produit1_id AND e.produit2_id = :produit2_id)
+                   OR (e.produit1_id = :produit2_id AND e.produit2_id = :produit1_id))
+                ORDER BY e.id DESC 
+                LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':produit1_id' => $produit1_id,
+            ':produit2_id' => $produit2_id
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
 }

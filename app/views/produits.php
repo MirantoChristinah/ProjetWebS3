@@ -57,10 +57,17 @@
                             <?= htmlspecialchars($produit['categorie']['nom']) ?>
                         </div>
 
-                        <!-- User -->
-                        <div class="mt-2 product-user fs-4">
-                            <i class="bi bi-person"></i>
-                            <?= htmlspecialchars($produit['user']['username']) ?>
+                        <!-- Propriétaire -->
+                        <div class="mt-2 d-flex align-items-center justify-content-center gap-2">
+                            <img src="/images/<?= htmlspecialchars($produit['proprietaire_photo'] ?? $produit['user']['photo'] ?? 'default.png') ?>" 
+                                 alt="Photo propriétaire"
+                                 class="rounded-circle"
+                                 style="width: 35px; height: 35px; object-fit: cover;">
+                            <a href="/profil/<?= $produit['user_id'] ?>" 
+                               class="text-decoration-none fw-bold text-primary">
+                                <i class="bi bi-person"></i>
+                                <?= htmlspecialchars($produit['proprietaire_nom'] ?? $produit['user']['username'] ?? 'Utilisateur') ?>
+                            </a>
                         </div>
 
                         <!-- Bouton -->

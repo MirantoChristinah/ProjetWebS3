@@ -3,21 +3,24 @@ namespace app\model;
 use Flight;
 use PDO;
 
-Class CategorieModel {
-    private $db;
+Class CategorieModel{
+    private $db; 
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct($db){
+        $this->db=$db; 
     }
 
-    public function getCategorieById($id) {
-        $stmt = $this->db->prepare("SELECT id, nom FROM categories WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
     public function  getAllCategorie(){
         $sql = "SELECT * FROM categories"; 
         return $this->db->query($sql)->fetchAll();
+    }
+
+    public function getCategorieById($id){
+        $sql = "SELECT * FROM categories WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function addCategorie($nom, $icon){
@@ -52,18 +55,6 @@ Class CategorieModel {
 
         return $stmt->execute();
     }
-
-    public function getProduitsByCategorie($categorieId , $produitAutre){
-        foreach($produitAutre as $produit){
-          //  echo  "Produit autre : " . $produit['nom'] . " - Catégorie ID : " . $produit['categorie_id'] . "\n";
-           // var_dump($produitAutre);
-            //var_dump($categorieId);
-
-            if($produit['categorie_id'] == $categorieId){
-              //  echo $produit['categorie_id'];
-                $resultat[] = $produit;
-            } 
-        }
-        return $resultat ?? [];
-    }
-}
+    
+    
+} 

@@ -44,9 +44,14 @@ class ProduitController {
     }
 
     public function getProduitsByCategorie($categorieId, $produitAutre){
-        $db = Flight::db();
-        $categorie = new CategorieModel($db);
-        return $categorie->getProduitsByCategorie($categorieId, $produitAutre);
+        // Filtrer les produits par catégorie depuis la liste fournie
+        $produits = [];
+        foreach ($produitAutre as $produit) {
+            if ($produit['categorie_id'] == $categorieId) {
+                $produits[] = $produit;
+            }
+        }
+        return $produits;
     }
 
     // Cherche les produits d'un utilisateur par nom et catégorie
@@ -58,6 +63,20 @@ class ProduitController {
 
     public function searchProduits(?string $motCle = null, ?int $categorieId = null) {
         return $this->produitModel->searchProduits($motCle, $categorieId);
+    } 
+
+    public function getProduitByPourcentage($idProduit, $pourcentage = 10) {
+        return $this->produitModel->getProduitByPourcentage($pourcentage, $idProduit);
+    } 
+
+    public function getPriceDifference($id1, $id2) {
+        return $this->produitModel
+                    ->getPriceDifference($id1, $id2);
     }
+
+    public function addProduit($nom, $description, $prix, $categorieId, $userId, $image = null) {
+        return $this->produitModel->addProduit($nom, $description, $prix, $categorieId, $userId, $image);
+    }
+
 
 }
